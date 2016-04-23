@@ -2,20 +2,32 @@
   <head>
     <title>A-Frame Audio Visualizer Component - Basic</title>
     <script src="../build.js"></script>
-    <script src="components/scale-on-kick.js"></script>
+    <script src="components/color-on-kick.js"></script>
   </head>
   <body>
     <a-scene>
       <a-assets>
+        <a-mixin id="box" geometry="primitive: box" material="color: #C03546"
+                 audio-visualizer="src: #yourhandinmine"
+                 audio-visualizer-kick="threshold: 0.00012" color-on-kick></a-mixin>
         <audio id="yourhandinmine" src="yourhandinmine.mp3"></audio>
       </a-assets>
 
-      <a-entity geometry="primitive: box"
-                material="color: #C03546"
-                audio-visualizer="src: #yourhandinmine"
-                audio-visualizer-kick="threshold: 0.01" scale-on-kick></a-entity>
+      <a-entity position="0 0.5 0">
+        <a-entity mixin="box" audio-visualizer-kick="frequency: 0, 10; threshold: 0.0001"
+                  position="-2 0 0"></a-entity>
+        <a-entity mixin="box" audio-visualizer-kick="threshold: 0.00012"
+                  position="-1 0 0"></a-entity>
+        <a-entity mixin="box" audio-visualizer-kick="threshold: 0.00015"></a-entity>
+        <a-entity mixin="box" audio-visualizer-kick="threshold: 0.00018"
+                  position="1 0 0"></a-entity>
+      </a-entity>
 
-      <a-sky color="#ECECEC"></a-sky>
+      <a-light type="ambient" color="#222"></a-light>
+      <a-light type="point" position="1 2 1"></a-light>
+      <a-light type="point" position="-2 2 1"></a-light>
+      <a-plane color="#333" rotation="-90 0 0" height="30" width="30"></a-plane>
+      <a-sky color="#222"></a-sky>
     </a-scene>
   </body>
 </html>

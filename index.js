@@ -56,8 +56,8 @@ AFRAME.registerComponent('audio-visualizer-kick', {
   dependencies: ['audio-visualizer'],
 
   schema: {
-    frequency: {type: 'array', default: [0, 10]},
-    threshold: {default: 0.3},
+    frequency: {type: 'array', default: [127, 129]},
+    threshold: {default: 0.00001},
     decay: {default: 0.2}
   },
 
@@ -71,18 +71,19 @@ AFRAME.registerComponent('audio-visualizer-kick', {
     var self = this;
 
     var kickData = AFRAME.utils.extend(data, {
-      onKick: function () {
-        if (this.kick) { return; }  // Already kicking.
-        el.emit('audio-visualizer-kick-start', data);
+      onKick: function (dancer, magnitude) {
+        if (self.kick) { return; }  // Already kicking.
+        el.emit('audio-visualizer-kick-start', this.arguments);
         self.kick = true;
       },
-      offKick: function () {
-        if (!this.kick) { return; }  // Already not kicking.
-        el.emit('audio-visualizer-kick-end', data);
+      offKick: function (dancer, magnitude) {
+        if (!self.kick) { return; }  // Already not kicking.
+        el.emit('audio-visualizer-kick-end', this.arguments);
         self.kick = false;
       }
     });
 
-    el.components['audio-visualizer'].dancer.createKick(kickData);
+    var kick = el.components['audio-visualizer'].dancer.createKick(kickData);
+    kick.on();
   }
 });
