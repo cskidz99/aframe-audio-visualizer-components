@@ -58,7 +58,7 @@ AFRAME.registerComponent('audio-visualizer-kick', {
   schema: {
     frequency: {type: 'array', default: [127, 129]},
     threshold: {default: 0.00001},
-    decay: {default: 0}
+    decay: {default: 0.00001}
   },
 
   init: function () {
