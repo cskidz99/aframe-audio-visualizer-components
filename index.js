@@ -30,7 +30,7 @@ AFRAME.registerSystem('audio-visualizer', {
  */
 AFRAME.registerComponent('audio-visualizer', {
   schema: {
-    unique: {type: 'src'},
+    unique: {default: false},
     src: {type: 'src'}
   },
 
@@ -58,7 +58,7 @@ AFRAME.registerComponent('audio-visualizer-kick', {
   schema: {
     frequency: {type: 'array', default: [127, 129]},
     threshold: {default: 0.00001},
-    decay: {default: 0.2}
+    decay: {default: 0}
   },
 
   init: function () {
