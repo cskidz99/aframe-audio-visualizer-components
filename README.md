@@ -14,6 +14,12 @@ Creates a `dancer.js` instance.
 | src      | Path to audio file `url(song.mp3)` or selector to audio element.     | null          |
 | unique   | Whether to share the audio instance with other visualizing entities. | false         |
 
+Access the `dancer.js` instance to get all the audio data you need:
+
+```
+el.components['audio-visualizer'].dancer.getSpectrum();
+```
+
 #### audio-visualizer-kick
 
 Adds kick with `audio-visualizer` component as a dependency.
