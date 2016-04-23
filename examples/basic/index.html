@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <title>A-Frame Audio Visualizer Component - Basic</title>
+    <script src="../build.js"></script>
+    <script src="components/scale-on-kick.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-assets>
+        <audio id="yourhandinmine" src="yourhandinmine.mp3"></audio>
+      </a-assets>
+
+      <a-entity geometry="primitive: box"
+                material="color: #C03546"
+                audio-visualizer="src: #yourhandinmine"
+                audio-visualizer-kick="threshold: 0.01" scale-on-kick></a-entity>
+
+      <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+  </body>
+</html>
