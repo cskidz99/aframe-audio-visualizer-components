@@ -35,6 +35,8 @@ amplitude, which is decreased by the decay rate per frame.
 | threshold | Threshold of amplitude to go over to fire a kick.                              | 0.00001       |
 | decay     | Rate that previously registered kick's amplitude is reduced by on every frame. | 0             |
 
+Events will be emitted on kicks and off kicks.
+
 | Event Name                  | Description                                   |
 | --------                    | -----------                                   |
 | audio-visualizer-kick-start | Kick start. Went from not kicking to kicking. |
