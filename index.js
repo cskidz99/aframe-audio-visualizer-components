@@ -41,6 +41,9 @@ AFRAME.registerComponent('audio-visualizer', {
   update: function () {
     var data = this.data;
     var system = this.system;
+
+    if (!data.src) { return; }
+
     if (data.unique) {
       this.dancer = system.createAudio(data.src);
     } else {
@@ -83,7 +86,18 @@ AFRAME.registerComponent('audio-visualizer-kick', {
       }
     });
 
-    var kick = el.components['audio-visualizer'].dancer.createKick(kickData);
-    kick.on();
+    var dancer = this.el.components['audio-visualizer'].dancer;
+    if (dancer) {
+      createKick(dancer);
+    } else {
+      this.el.addEventListener('audio-visualizer-ready', function (evt) {
+        createKick(evt.detail.dancer);
+      });
+    }
+
+    function createKick (dancer) {
+      var kick = dancer.createKick(kickData);
+      kick.on();
+    }
   }
 });
