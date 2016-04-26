@@ -95,6 +95,8 @@
 	    } else {
 	      this.dancer = system.getOrCreateAudio(data.src);
 	    }
+
+	    this.el.emit('audio-visualizer-ready', {dancer: this.dancer});
 	  }
 	});
 
