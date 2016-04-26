@@ -140,9 +140,9 @@
 /***/ function(module, exports) {
 
 	/*
-	 * dancer - v0.4.0 - 2014-02-01
+	 * dancer - v0.4.0 - 2016-04-25
 	 * https://github.com/jsantell/dancer.js
-	 * Copyright (c) 2014 Jordan Santell
+	 * Copyright (c) 2016 Jordan Santell
 	 * Licensed MIT
 	 */
 	(function() {
@@ -363,8 +363,6 @@
 	      return null;
 	    } else if ( !isUnsupportedSafari() && ( window.AudioContext || window.webkitAudioContext )) {
 	      return 'webaudio';
-	    } else if ( audioEl && audioEl.mozSetup ) {
-	      return 'audiodata';
 	    } else if ( FlashDetect.versionAtLeast( 9 ) ) {
 	      return 'flash';
 	    } else {
@@ -402,8 +400,6 @@
 	    switch ( Dancer.isSupported() ) {
 	      case 'webaudio':
 	        return new Dancer.adapters.webaudio( instance );
-	      case 'audiodata':
-	        return new Dancer.adapters.moz( instance );
 	      case 'flash':
 	        return new Dancer.adapters.flash( instance );
 	      default:
@@ -452,7 +448,7 @@
 	  };
 
 	  Kick.prototype = {
-	    on  : function () {
+	    on  : function () { 
 	      this.isOn = true;
 	      return this;
 	    },
@@ -637,104 +633,6 @@
 	})();
 
 	(function() {
-
-	  var adapter = function ( dancer ) {
-	    this.dancer = dancer;
-	    this.audio = new Audio();
-	  };
-
-	  adapter.prototype = {
-
-	    load : function ( _source ) {
-	      var _this = this;
-	      this.audio = _source;
-
-	      this.isLoaded = false;
-	      this.progress = 0;
-
-	      if ( this.audio.readyState < 3 ) {
-	        this.audio.addEventListener( 'loadedmetadata', function () {
-	          getMetadata.call( _this );
-	        }, false);
-	      } else {
-	        getMetadata.call( _this );
-	      }
-
-	      this.audio.addEventListener( 'MozAudioAvailable', function ( e ) {
-	        _this.update( e );
-	      }, false);
-
-	      this.audio.addEventListener( 'progress', function ( e ) {
-	        if ( e.currentTarget.duration ) {
-	          _this.progress = e.currentTarget.seekable.end( 0 ) / e.currentTarget.duration;
-	        }
-	      }, false);
-
-	      return this.audio;
-	    },
-
-	    play : function () {
-	      this.audio.play();
-	      this.isPlaying = true;
-	    },
-
-	    pause : function () {
-	      this.audio.pause();
-	      this.isPlaying = false;
-	    },
-
-	    setVolume : function ( volume ) {
-	      this.audio.volume = volume;
-	    },
-
-	    getVolume : function () {
-	      return this.audio.volume;
-	    },
-
-	    getProgress : function () {
-	      return this.progress;
-	    },
-
-	    getWaveform : function () {
-	      return this.signal;
-	    },
-
-	    getSpectrum : function () {
-	      return this.fft.spectrum;
-	    },
-
-	    getTime : function () {
-	      return this.audio.currentTime;
-	    },
-
-	    update : function ( e ) {
-	      if ( !this.isPlaying || !this.isLoaded ) return;
-
-	      for ( var i = 0, j = this.fbLength / 2; i < j; i++ ) {
-	        this.signal[ i ] = ( e.frameBuffer[ 2 * i ] + e.frameBuffer[ 2 * i + 1 ] ) / 2;
-	      }
-
-	      this.fft.forward( this.signal );
-	      this.dancer.trigger( 'update' );
-	    }
-	  };
-
-	  function getMetadata () {
-	    this.fbLength = this.audio.mozFrameBufferLength;
-	    this.channels = this.audio.mozChannels;
-	    this.rate     = this.audio.mozSampleRate;
-	    this.fft      = new FFT( this.fbLength / this.channels, this.rate );
-	    this.signal   = new Float32Array( this.fbLength / this.channels );
-	    this.isLoaded = true;
-	    this.progress = 1;
-	    this.dancer.trigger( 'loaded' );
-	  }
-
-	  Dancer.adapters.moz = adapter;
-
-	})();
-
-	(function() {
 	  var
 	    SAMPLE_SIZE  = 1024,
 	    SAMPLE_RATE  = 44100,
@@ -883,9 +781,9 @@
 
 	})();
 
-	/*
+	/* 
 	 *  DSP.js - a comprehensive digital signal processing  library for javascript
-	 *
+	 * 
 	 *  Created by Corban Brook <corbanbrook@gmail.com> on 2010-01-01.
 	 *  Copyright 2010 Corban Brook. All rights reserved.
 	 *
@@ -921,7 +819,7 @@
 	        imag      = this.imag,
 	        bSi       = 2 / this.bufferSize,
 	        sqrt      = Math.sqrt,
-	        rval,
+	        rval, 
 	        ival,
 	        mag;
 
@@ -951,7 +849,7 @@
 	 */
 	function FFT(bufferSize, sampleRate) {
 	  FourierTransform.call(this, bufferSize, sampleRate);
-
+	   
 	  this.reverseTable = new Uint32Array(bufferSize);
 
 	  var limit = 1;
@@ -1021,7 +919,7 @@
 	    //phaseShiftStepImag = Math.sin(-Math.PI/halfSize);
 	    phaseShiftStepReal = cosTable[halfSize];
 	    phaseShiftStepImag = sinTable[halfSize];
-
+	    
 	    currentPhaseShiftReal = 1;
 	    currentPhaseShiftImag = 0;
 
@@ -1092,7 +990,7 @@
 	    ];
 	    /**
 	     * Extract the ActiveX version of the plugin.
-	     *
+	     * 
 	     * @param {Object} The flash ActiveX object.
 	     * @type String
 	     */
@@ -1105,7 +1003,7 @@
 	    };
 	    /**
 	     * Try and retrieve an ActiveX object having a specified name.
-	     *
+	     * 
 	     * @param {String} name The ActiveX object name lookup.
 	     * @return One of ActiveX object or a simple object having an attribute of activeXError with a value of true.
 	     * @type Object
@@ -1121,8 +1019,8 @@
 	    };
 	    /**
 	     * Parse an ActiveX $version string into an object.
-	     *
-	     * @param {String} str The ActiveX Object GetVariable($version) return value.
+	     * 
+	     * @param {String} str The ActiveX Object GetVariable($version) return value. 
 	     * @return An object having raw, major, minor, revision and revisionStr attributes.
 	     * @type Object
 	     */
@@ -1138,7 +1036,7 @@
 	    };
 	    /**
 	     * Parse a standard enabledPlugin.description into an object.
-	     *
+	     * 
 	     * @param {String} str The enabledPlugin.description value.
 	     * @return An object having raw, major, minor, revision and revisionStr attributes.
 	     * @type Object
@@ -1150,14 +1048,14 @@
 	        return {
 	            "raw":str,
 	            "major":parseInt(majorMinor[0], 10),
-	            "minor":parseInt(majorMinor[1], 10),
+	            "minor":parseInt(majorMinor[1], 10), 
 	            "revisionStr":revisionStr,
 	            "revision":parseRevisionStrToInt(revisionStr)
 	        };
 	    };
 	    /**
 	     * Parse the plugin revision string into an integer.
-	     *
+	     * 
 	     * @param {String} The revision in string format.
 	     * @type Number
 	     */
@@ -1166,7 +1064,7 @@
 	    };
 	    /**
 	     * Is the major version greater than or equal to a specified version.
-	     *
+	     * 
 	     * @param {Number} version The minimum required major version.
 	     * @type Boolean
 	     */
@@ -1175,7 +1073,7 @@
 	    };
 	    /**
 	     * Is the minor version greater than or equal to a specified version.
-	     *
+	     * 
 	     * @param {Number} version The minimum required minor version.
 	     * @type Boolean
 	     */
@@ -1184,7 +1082,7 @@
 	    };
 	    /**
 	     * Is the revision version greater than or equal to a specified version.
-	     *
+	     * 
 	     * @param {Number} version The minimum required revision version.
 	     * @type Boolean
 	     */
@@ -1193,7 +1091,7 @@
 	    };
 	    /**
 	     * Is the version greater than or equal to a specified major, minor and revision.
-	     *
+	     * 
 	     * @param {Number} major The minimum required major version.
 	     * @param {Number} (Optional) minor The minimum required minor version.
 	     * @param {Number} (Optional) revision The minimum required revision version.
@@ -1226,7 +1124,7 @@
 	                var versionObj = parseStandardVersion(version);
 	                self.raw = versionObj.raw;
 	                self.major = versionObj.major;
-	                self.minor = versionObj.minor;
+	                self.minor = versionObj.minor; 
 	                self.revisionStr = versionObj.revisionStr;
 	                self.revision = versionObj.revision;
 	                self.installed = true;
@@ -1242,7 +1140,7 @@
 	                        var versionObj = parseActiveXVersion(version);
 	                        self.raw = versionObj.raw;
 	                        self.major = versionObj.major;
-	                        self.minor = versionObj.minor;
+	                        self.minor = versionObj.minor; 
 	                        self.revision = versionObj.revision;
 	                        self.revisionStr = versionObj.revisionStr;
 	                    }
@@ -1252,7 +1150,6 @@
 	    }();
 	};
 	FlashDetect.JS_RELEASE = "1.0.4";
-
 
 /***/ }
 /******/ ]);
