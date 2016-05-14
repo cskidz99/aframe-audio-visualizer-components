@@ -32,6 +32,8 @@
   "homepage": "https://github.com/ngokevin/aframe-audio-visualizer-components#readme",
   "devDependencies": {
     "aframe": "^0.2.0",
+    "aframe-entity-generator-component": "^0.1.0",
+    "aframe-layout-component": "^1.1.0",
     "browserify": "^12.0.1",
     "browserify-css": "^0.8.3",
     "budo": "^7.1.0",
