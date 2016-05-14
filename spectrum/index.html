@@ -1,0 +1,26 @@
+<html>
+  <head>
+    <title>A-Frame Audio Visualizer Component - Basic</title>
+    <script src="../build.js"></script>
+    <script src="components/audio-visualizer-spectrum-scale.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-assets>
+        <a-mixin id="bar" geometry="primitive: box" material="color: black"></a-mixin>
+        <audio id="machinecivilization" src="machinecivilization.mp3"></audio>
+      </a-assets>
+
+      <a-entity audio-visualizer="src: #machinecivilization"
+                audio-visualizer-spectrum-scale="delay: 90; max: 20; multiplier: 500"
+                layout="type: circle; radius: 10"
+                entity-generator="mixin: bar; num: 512">
+      </a-entity>
+
+      <a-light type="ambient" color="#222"></a-light>
+      <a-light type="point" position="0 1 0" intensity="2"></a-light>
+      <a-circle color="#333" rotation="-90 0 0" radius="12" roughness="1"></a-circle>
+      <a-sky color="#222"></a-sky>
+    </a-scene>
+  </body>
+</html>

@@ -1,8 +1,10 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 require('aframe');
+require('aframe-entity-generator-component');
+require('aframe-layout-component');
 require('../index');
 
-},{"../index":2,"aframe":4}],2:[function(require,module,exports){
+},{"../index":2,"aframe":6,"aframe-entity-generator-component":4,"aframe-layout-component":5}],2:[function(require,module,exports){
 require('./lib/dancer');
 
 if (typeof AFRAME === 'undefined') {
@@ -46,11 +48,16 @@ AFRAME.registerComponent('audio-visualizer', {
   update: function () {
     var data = this.data;
     var system = this.system;
+
+    if (!data.src) { return; }
+
     if (data.unique) {
       this.dancer = system.createAudio(data.src);
     } else {
       this.dancer = system.getOrCreateAudio(data.src);
     }
+
+    this.el.emit('audio-visualizer-ready', {dancer: this.dancer});
   }
 });
 
@@ -88,16 +95,27 @@ AFRAME.registerComponent('audio-visualizer-kick', {
       }
     });
 
-    var kick = el.components['audio-visualizer'].dancer.createKick(kickData);
-    kick.on();
+    var dancer = this.el.components['audio-visualizer'].dancer;
+    if (dancer) {
+      createKick(dancer);
+    } else {
+      this.el.addEventListener('audio-visualizer-ready', function (evt) {
+        createKick(evt.detail.dancer);
+      });
+    }
+
+    function createKick (dancer) {
+      var kick = dancer.createKick(kickData);
+      kick.on();
+    }
   }
 });
 
 },{"./lib/dancer":3}],3:[function(require,module,exports){
 /*
- * dancer - v0.4.0 - 2014-02-01
+ * dancer - v0.4.0 - 2016-04-25
  * https://github.com/jsantell/dancer.js
- * Copyright (c) 2014 Jordan Santell
+ * Copyright (c) 2016 Jordan Santell
  * Licensed MIT
  */
 (function() {
@@ -318,8 +336,6 @@ AFRAME.registerComponent('audio-visualizer-kick', {
       return null;
     } else if ( !isUnsupportedSafari() && ( window.AudioContext || window.webkitAudioContext )) {
       return 'webaudio';
-    } else if ( audioEl && audioEl.mozSetup ) {
-      return 'audiodata';
     } else if ( FlashDetect.versionAtLeast( 9 ) ) {
       return 'flash';
     } else {
@@ -357,8 +373,6 @@ AFRAME.registerComponent('audio-visualizer-kick', {
     switch ( Dancer.isSupported() ) {
       case 'webaudio':
         return new Dancer.adapters.webaudio( instance );
-      case 'audiodata':
-        return new Dancer.adapters.moz( instance );
       case 'flash':
         return new Dancer.adapters.flash( instance );
       default:
@@ -407,7 +421,7 @@ AFRAME.registerComponent('audio-visualizer-kick', {
   };
 
   Kick.prototype = {
-    on  : function () {
+    on  : function () { 
       this.isOn = true;
       return this;
     },
@@ -592,104 +606,6 @@ AFRAME.registerComponent('audio-visualizer-kick', {
 })();
 
 (function() {
-
-  var adapter = function ( dancer ) {
-    this.dancer = dancer;
-    this.audio = new Audio();
-  };
-
-  adapter.prototype = {
-
-    load : function ( _source ) {
-      var _this = this;
-      this.audio = _source;
-
-      this.isLoaded = false;
-      this.progress = 0;
-
-      if ( this.audio.readyState < 3 ) {
-        this.audio.addEventListener( 'loadedmetadata', function () {
-          getMetadata.call( _this );
-        }, false);
-      } else {
-        getMetadata.call( _this );
-      }
-
-      this.audio.addEventListener( 'MozAudioAvailable', function ( e ) {
-        _this.update( e );
-      }, false);
-
-      this.audio.addEventListener( 'progress', function ( e ) {
-        if ( e.currentTarget.duration ) {
-          _this.progress = e.currentTarget.seekable.end( 0 ) / e.currentTarget.duration;
-        }
-      }, false);
-
-      return this.audio;
-    },
-
-    play : function () {
-      this.audio.play();
-      this.isPlaying = true;
-    },
-
-    pause : function () {
-      this.audio.pause();
-      this.isPlaying = false;
-    },
-
-    setVolume : function ( volume ) {
-      this.audio.volume = volume;
-    },
-
-    getVolume : function () {
-      return this.audio.volume;
-    },
-
-    getProgress : function () {
-      return this.progress;
-    },
-
-    getWaveform : function () {
-      return this.signal;
-    },
-
-    getSpectrum : function () {
-      return this.fft.spectrum;
-    },
-
-    getTime : function () {
-      return this.audio.currentTime;
-    },
-
-    update : function ( e ) {
-      if ( !this.isPlaying || !this.isLoaded ) return;
-
-      for ( var i = 0, j = this.fbLength / 2; i < j; i++ ) {
-        this.signal[ i ] = ( e.frameBuffer[ 2 * i ] + e.frameBuffer[ 2 * i + 1 ] ) / 2;
-      }
-
-      this.fft.forward( this.signal );
-      this.dancer.trigger( 'update' );
-    }
-  };
-
-  function getMetadata () {
-    this.fbLength = this.audio.mozFrameBufferLength;
-    this.channels = this.audio.mozChannels;
-    this.rate     = this.audio.mozSampleRate;
-    this.fft      = new FFT( this.fbLength / this.channels, this.rate );
-    this.signal   = new Float32Array( this.fbLength / this.channels );
-    this.isLoaded = true;
-    this.progress = 1;
-    this.dancer.trigger( 'loaded' );
-  }
-
-  Dancer.adapters.moz = adapter;
-
-})();
-
-(function() {
   var
     SAMPLE_SIZE  = 1024,
     SAMPLE_RATE  = 44100,
@@ -838,9 +754,9 @@ AFRAME.registerComponent('audio-visualizer-kick', {
 
 })();
 
-/*
+/* 
  *  DSP.js - a comprehensive digital signal processing  library for javascript
- *
+ * 
  *  Created by Corban Brook <corbanbrook@gmail.com> on 2010-01-01.
  *  Copyright 2010 Corban Brook. All rights reserved.
  *
@@ -876,7 +792,7 @@ function FourierTransform(bufferSize, sampleRate) {
         imag      = this.imag,
         bSi       = 2 / this.bufferSize,
         sqrt      = Math.sqrt,
-        rval,
+        rval, 
         ival,
         mag;
 
@@ -906,7 +822,7 @@ function FourierTransform(bufferSize, sampleRate) {
  */
 function FFT(bufferSize, sampleRate) {
   FourierTransform.call(this, bufferSize, sampleRate);
-
+   
   this.reverseTable = new Uint32Array(bufferSize);
 
   var limit = 1;
@@ -976,7 +892,7 @@ FFT.prototype.forward = function(buffer) {
     //phaseShiftStepImag = Math.sin(-Math.PI/halfSize);
     phaseShiftStepReal = cosTable[halfSize];
     phaseShiftStepImag = sinTable[halfSize];
-
+    
     currentPhaseShiftReal = 1;
     currentPhaseShiftImag = 0;
 
@@ -1047,7 +963,7 @@ var FlashDetect = new function(){
     ];
     /**
      * Extract the ActiveX version of the plugin.
-     *
+     * 
      * @param {Object} The flash ActiveX object.
      * @type String
      */
@@ -1060,7 +976,7 @@ var FlashDetect = new function(){
     };
     /**
      * Try and retrieve an ActiveX object having a specified name.
-     *
+     * 
      * @param {String} name The ActiveX object name lookup.
      * @return One of ActiveX object or a simple object having an attribute of activeXError with a value of true.
      * @type Object
@@ -1076,8 +992,8 @@ var FlashDetect = new function(){
     };
     /**
      * Parse an ActiveX $version string into an object.
-     *
-     * @param {String} str The ActiveX Object GetVariable($version) return value.
+     * 
+     * @param {String} str The ActiveX Object GetVariable($version) return value. 
      * @return An object having raw, major, minor, revision and revisionStr attributes.
      * @type Object
      */
@@ -1093,7 +1009,7 @@ var FlashDetect = new function(){
     };
     /**
      * Parse a standard enabledPlugin.description into an object.
-     *
+     * 
      * @param {String} str The enabledPlugin.description value.
      * @return An object having raw, major, minor, revision and revisionStr attributes.
      * @type Object
@@ -1105,14 +1021,14 @@ var FlashDetect = new function(){
         return {
             "raw":str,
             "major":parseInt(majorMinor[0], 10),
-            "minor":parseInt(majorMinor[1], 10),
+            "minor":parseInt(majorMinor[1], 10), 
             "revisionStr":revisionStr,
             "revision":parseRevisionStrToInt(revisionStr)
         };
     };
     /**
      * Parse the plugin revision string into an integer.
-     *
+     * 
      * @param {String} The revision in string format.
      * @type Number
      */
@@ -1121,7 +1037,7 @@ var FlashDetect = new function(){
     };
     /**
      * Is the major version greater than or equal to a specified version.
-     *
+     * 
      * @param {Number} version The minimum required major version.
      * @type Boolean
      */
@@ -1130,7 +1046,7 @@ var FlashDetect = new function(){
     };
     /**
      * Is the minor version greater than or equal to a specified version.
-     *
+     * 
      * @param {Number} version The minimum required minor version.
      * @type Boolean
      */
@@ -1139,7 +1055,7 @@ var FlashDetect = new function(){
     };
     /**
      * Is the revision version greater than or equal to a specified version.
-     *
+     * 
      * @param {Number} version The minimum required revision version.
      * @type Boolean
      */
@@ -1148,7 +1064,7 @@ var FlashDetect = new function(){
     };
     /**
      * Is the version greater than or equal to a specified major, minor and revision.
-     *
+     * 
      * @param {Number} major The minimum required major version.
      * @param {Number} (Optional) minor The minimum required minor version.
      * @param {Number} (Optional) revision The minimum required revision version.
@@ -1181,7 +1097,7 @@ var FlashDetect = new function(){
                 var versionObj = parseStandardVersion(version);
                 self.raw = versionObj.raw;
                 self.major = versionObj.major;
-                self.minor = versionObj.minor;
+                self.minor = versionObj.minor; 
                 self.revisionStr = versionObj.revisionStr;
                 self.revision = versionObj.revision;
                 self.installed = true;
@@ -1197,7 +1113,7 @@ var FlashDetect = new function(){
                         var versionObj = parseActiveXVersion(version);
                         self.raw = versionObj.raw;
                         self.major = versionObj.major;
-                        self.minor = versionObj.minor;
+                        self.minor = versionObj.minor; 
                         self.revision = versionObj.revision;
                         self.revisionStr = versionObj.revisionStr;
                     }
@@ -1207,8 +1123,269 @@ var FlashDetect = new function(){
     }();
 };
 FlashDetect.JS_RELEASE = "1.0.4";
-
 },{}],4:[function(require,module,exports){
+if (typeof AFRAME === 'undefined') {
+  throw new Error('Component attempted to register before AFRAME was available.');
+}
+
+/**
+ * Entity Generator component for A-Frame.
+ * Create number of entities given a mixin.
+ */
+AFRAME.registerComponent('entity-generator', {
+  schema: {
+    mixin: {default: ''},
+    num: {default: 10}
+  },
+
+  init: function () {
+    var data = this.data;
+
+    // Create entities with supplied mixin.
+    for (var i = 0; i < data.num; i++) {
+      var entity = document.createElement('a-entity');
+      entity.setAttribute('mixin', data.mixin);
+      this.el.appendChild(entity);
+    }
+  }
+});
+
+},{}],5:[function(require,module,exports){
+/**
+ * Layout component for A-Frame.
+ * Some layouts adapted from http://www.vb-helper.com/tutorial_platonic_solids.html
+ */
+AFRAME.registerComponent('layout', {
+  schema: {
+    columns: {default: 1, min: 0, if: {type: ['box']}},
+    margin: {default: 1, min: 0, if: { type: ['box', 'line']}},
+    radius: {default: 1, min: 0, if: {
+      type: ['circle', 'cube', 'dodecahedron', 'pyramid']
+    }},
+    type: {default: 'line', oneOf: [
+      'box', 'circle', 'cube', 'dodecahedron', 'line', 'pyramid'
+    ]}
+  },
+
+  /**
+   * Store initial positions in case need to reset on component removal.
+   */
+  init: function () {
+    var el = this.el;
+    this.children = el.getChildEntities();
+    var initialPositions = initialPositions = [];
+
+    this.children.forEach(function (childEl) {
+      initialPositions.push(childEl.getComputedAttribute('position'));
+    });
+
+    this.childAttachedCallback = this.update.bind(this);
+    el.addEventListener('child-attached', this.childAttachedCallback);
+  },
+
+  /**
+   * Update child entity positions.
+   */
+  update: function (oldData) {
+    var children = this.children;
+    var data = this.data;
+    var el = this.el;
+    var numChildren = children.length;
+    var positionFn;
+    var positions;
+    var startPosition = el.getComputedAttribute('position');
+
+    // Calculate different positions based on layout shape.
+    switch (data.type) {
+      case 'box': {
+        positionFn = getBoxPositions;
+        break;
+      }
+      case 'circle': {
+        positionFn = getCirclePositions;
+        break;
+      }
+      case 'cube': {
+        positionFn = getCubePositions;
+        break;
+      }
+      case 'dodecahedron': {
+        positionFn = getDodecahedronPositions;
+        break;
+      }
+      case 'pyramid': {
+        positionFn = getPyramidPositions;
+        break;
+      }
+      default: {
+        // Line.
+        positionFn = getLinePositions;
+      }
+    }
+
+    positions = positionFn(data, numChildren, startPosition);
+    setPositions(children, positions);
+  },
+
+  /**
+   * Reset positions.
+   */
+  remove: function () {
+    el.removeEventListener('child-attached', this.childAttachedCallback);
+    setPositions(children, this.initialPositions);
+  }
+});
+
+/**
+ * Get positions for `box` layout.
+ */
+function getBoxPositions (data, numChildren, startPosition) {
+  var positions = [];
+  var rows = Math.ceil(numChildren / data.columns);
+
+  for (var row = 0; row < rows; row++) {
+    for (var column = 0; column < data.columns; column++) {
+      positions.push([
+        column * data.margin,
+        row * data.margin,
+        0
+      ]);
+    }
+  }
+
+  return positions;
+}
+module.exports.getBoxPositions = getBoxPositions;
+
+/**
+ * Get positions for `circle` layout.
+ * TODO: arcLength.
+ */
+function getCirclePositions (data, numChildren, startPosition) {
+  var positions = [];
+
+  for (var i = 0; i < numChildren; i++) {
+    var rad = i * (2 * Math.PI) / numChildren;
+    positions.push([
+      startPosition.x + data.radius * Math.cos(rad),
+      startPosition.y,
+      startPosition.z + data.radius * Math.sin(rad)
+    ]);
+  }
+  return positions;
+}
+module.exports.getCirclePositions = getCirclePositions;
+
+/**
+ * Get positions for `line` layout.
+ * TODO: 3D margins.
+ */
+function getLinePositions (data, numChildren, startPosition) {
+  data.columns = numChildren;
+  return getBoxPositions(data, numChildren, startPosition);
+}
+module.exports.getLinePositions = getLinePositions;
+
+/**
+ * Get positions for `cube` layout.
+ */
+function getCubePositions (data, numChildren, startPosition) {
+  return transform([
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [-1, 0, 0],
+    [0, -1, 0],
+    [0, 0, -1],
+  ], startPosition, data.radius / 2);
+}
+module.exports.getCubePositions = getCubePositions;
+
+/**
+ * Get positions for `dodecahedron` layout.
+ */
+function getDodecahedronPositions (data, numChildren, startPosition) {
+  var PHI = (1 + Math.sqrt(5)) / 2;
+  var B = 1 / PHI;
+  var C = 2 - PHI;
+  var NB = -1 * B;
+  var NC = -1 * C;
+
+  return transform([
+    [-1, C, 0],
+    [-1, NC, 0],
+    [0, -1, C],
+    [0, -1, NC],
+    [0, 1, C],
+    [0, 1, NC],
+    [1, C, 0],
+    [1, NC, 0],
+    [B, B, B],
+    [B, B, NB],
+    [B, NB, B],
+    [B, NB, NB],
+    [C, 0, 1],
+    [C, 0, -1],
+    [NB, B, B],
+    [NB, B, NB],
+    [NB, NB, B],
+    [NB, NB, NB],
+    [NC, 0, 1],
+    [NC, 0, -1],
+  ], startPosition, data.radius / 2);
+}
+module.exports.getDodecahedronPositions = getDodecahedronPositions;
+
+/**
+ * Get positions for `pyramid` layout.
+ */
+function getPyramidPositions (data, numChildren, startPosition) {
+  var SQRT_3 = Math.sqrt(3);
+  var NEG_SQRT_1_3 = -1 / Math.sqrt(3);
+  var DBL_SQRT_2_3 = 2 * Math.sqrt(2 / 3);
+
+  return transform([
+    [0, 0, SQRT_3 + NEG_SQRT_1_3],
+    [-1, 0, NEG_SQRT_1_3],
+    [1, 0, NEG_SQRT_1_3],
+    [0, DBL_SQRT_2_3, 0]
+  ], startPosition, data.radius / 2);
+}
+module.exports.getPyramidPositions = getPyramidPositions;
+
+/**
+ * Multiply all coordinates by a scale factor and add translate.
+ *
+ * @params {array} positions - Array of coordinates in array form.
+ * @returns {array} positions
+ */
+function transform (positions, translate, scale) {
+  translate = [translate.x, translate.y, translate.z];
+  return positions.map(function (position) {
+    return position.map(function (point, i) {
+      return point * scale + translate[i];
+    });
+  });
+};
+
+/**
+ * Set position on child entities.
+ *
+ * @param {array} els - Child entities to set.
+ * @param {array} positions - Array of coordinates.
+ */
+function setPositions (els, positions) {
+  els.forEach(function (el, i) {
+    var position = positions[i];
+    el.setAttribute('position', {
+      x: position[0],
+      y: position[1],
+      z: position[2]
+    });
+  });
+}
+
+},{}],6:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.AFRAME = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
