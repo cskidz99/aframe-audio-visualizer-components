@@ -30,7 +30,7 @@ AFRAME.registerComponent('audio-visualizer-spectrum-scale', {
     for (var i = 0; i < children.length; i++) {
       children[i].setAttribute('scale', {
         x: 1,
-        y: Math.min(data.max, this.spectrum[i] * data.multiplier),
+        y: Math.min(data.max, Math.max(this.spectrum[i] * data.multiplier, 0.05)),
         z: 1
       });
     }
