@@ -1,27 +1,44 @@
-require('./lib/dancer');
-
 if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
 
+/**
+ * Audio Visualizer system for A-Frame.
+ */
 AFRAME.registerSystem('audio-visualizer', {
   init: function () {
-    this.dancers = {};
+    this.analysers = {};
+    this.context = new AudioContext();
   },
 
-  getOrCreateAudio: function (src) {
-    if (this.dancers[src]) {
-      return this.dancers[src];
+  getOrCreateAnalyser: function (data) {
+    var src = data.src.getAttribute('src');
+    if (this.analysers[src]) {
+      return this.analysers[src];
     }
-    return this.createAudio(src);
+    return this.createAnalyser(data);
   },
 
-  createAudio: function (src) {
-    var dancer = new Dancer();
-    dancer.load({src: src});
-    dancer.play();
-    this.dancers[src] = dancer;
-    return dancer;
+  createAnalyser: function (data) {
+    var context = this.context;
+    var analysers = this.analysers;
+    var analyser = context.createAnalyser();
+    var audioEl = data.src;
+    var src = audioEl.getAttribute('src');
+
+    return new Promise(function (resolve) {
+      audioEl.addEventListener('canplay', function () {
+        var source = context.createMediaElementSource(audioEl)
+        source.connect(analyser);
+        analyser.connect(context.destination);
+        analyser.smoothingTimeConstant = data.smoothingTimeConstant;
+        analyser.fftSize = data.fftSize;
+
+        // Store.
+        analysers[src] = analyser;
+        resolve(analysers[src]);
+      });
+    });
   }
 });
 
@@ -30,76 +47,32 @@ AFRAME.registerSystem('audio-visualizer', {
  */
 AFRAME.registerComponent('audio-visualizer', {
   schema: {
-    unique: {default: false},
-    src: {type: 'src'}
+    smoothingTimeConstant: {default: 0.8},
+    fftSize: {default: 2048},
+    src: {type: 'selector'},
+    unique: {default: false}
   },
 
   init: function () {
-    this.dancer = null;
+    this.analyser = null;
   },
 
   update: function () {
+    var self = this;
     var data = this.data;
     var system = this.system;
 
     if (!data.src) { return; }
 
     if (data.unique) {
-      this.dancer = system.createAudio(data.src);
+      system.createAnalyser(data).then(emit);
     } else {
-      this.dancer = system.getOrCreateAudio(data.src);
+      system.getOrCreateAnalyser(data).then(emit);
     }
 
-    this.el.emit('audio-visualizer-ready', {dancer: this.dancer});
-  }
-});
-
-/**
- * Audio Visualizer Kick component for A-Frame.
- */
-AFRAME.registerComponent('audio-visualizer-kick', {
-  dependencies: ['audio-visualizer'],
-
-  schema: {
-    frequency: {type: 'array', default: [127, 129]},
-    threshold: {default: 0.00001},
-    decay: {default: 0.00001}
-  },
-
-  init: function () {
-    this.kick = false;
-  },
-
-  update: function () {
-    var data = this.data;
-    var el = this.el;
-    var self = this;
-
-    var kickData = AFRAME.utils.extend(data, {
-      onKick: function (dancer, magnitude) {
-        if (self.kick) { return; }  // Already kicking.
-        el.emit('audio-visualizer-kick-start', this.arguments);
-        self.kick = true;
-      },
-      offKick: function (dancer, magnitude) {
-        if (!self.kick) { return; }  // Already not kicking.
-        el.emit('audio-visualizer-kick-end', this.arguments);
-        self.kick = false;
-      }
-    });
-
-    var dancer = this.el.components['audio-visualizer'].dancer;
-    if (dancer) {
-      createKick(dancer);
-    } else {
-      this.el.addEventListener('audio-visualizer-ready', function (evt) {
-        createKick(evt.detail.dancer);
-      });
-    }
-
-    function createKick (dancer) {
-      var kick = dancer.createKick(kickData);
-      kick.on();
+    function emit (analyser) {
+      self.analyser = analyser;
+      self.el.emit('audio-analyser-ready', {analyser: analyser});
     }
   }
 });
