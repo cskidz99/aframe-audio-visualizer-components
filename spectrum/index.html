@@ -1,19 +1,22 @@
 <html>
   <head>
-    <title>A-Frame Audio Visualizer Component - Basic</title>
+    <title>A-Frame Audio Visualizer Component - Spectrum</title>
     <script src="../build.js"></script>
     <script src="components/audio-visualizer-spectrum-scale.js"></script>
+    <script src="components/scale-y-color.js"></script>
   </head>
   <body>
     <a-scene>
       <a-assets>
-        <a-mixin id="bar" geometry="primitive: box" material="color: black"></a-mixin>
-        <audio id="machinecivilization" src="machinecivilization.mp3"></audio>
+        <a-mixin id="bar" geometry="primitive: box" material="color: black"
+                          scale-y-color="from: 10 60 10; to: 180 255 180; maxScale: 15">
+        </a-mixin>
+        <audio id="song" autoplay loop src="yourhandinmine.mp3"></audio>
       </a-assets>
 
-      <a-entity audio-visualizer="src: #machinecivilization"
-                audio-visualizer-spectrum-scale="delay: 90; max: 20; multiplier: 500"
-                entity-generator="mixin: bar; num: 512"
+      <a-entity audio-visualizer="src: #song; smoothingTimeConstant: 0.9"
+                audio-visualizer-spectrum-scale="max: 50; multiplier: 0.06"
+                entity-generator="mixin: bar; num: 256"
                 layout="type: circle; radius: 10"
                 rotation="0 180 0">
       </a-entity>
