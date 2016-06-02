@@ -6,31 +6,17 @@ AFRAME.registerComponent('audio-visualizer-spectrum-scale', {
     multiplier: {default: 100}
   },
 
-  init: function () {
-    var self = this;
-
-    if (!this.el.components['audio-visualizer'].analyser) {
-      this.el.addEventListener('audio-analyser-ready', init);
-    } else {
-      init();
-    }
-
-    function init () {
-      self.analyser = self.el.components['audio-visualizer'].analyser;
-      self.spectrum = new Uint8Array(self.analyser.frequencyBinCount);
-    }
-  },
-
   tick: function (time) {
+    var spectrum = this.el.components['audio-visualizer'].spectrum;
+    if (!spectrum) { return; }
+
     var children = this.el.children;
     var data = this.data;
-
-    this.analyser.getByteFrequencyData(this.spectrum);
 
     for (var i = 0; i < children.length; i++) {
       children[i].setAttribute('scale', {
         x: 1,
-        y: Math.min(data.max, Math.max(this.spectrum[i] * data.multiplier, 0.05)),
+        y: Math.min(data.max, Math.max(spectrum[i] * data.multiplier, 0.05)),
         z: 1
       });
     }
