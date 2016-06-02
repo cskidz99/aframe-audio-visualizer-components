@@ -1,6 +1,6 @@
 {
   "name": "aframe-audio-visualizer-components",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Audio Visualizer components for A-Frame.",
   "main": "index.js",
   "scripts": {
