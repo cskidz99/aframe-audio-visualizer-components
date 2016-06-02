@@ -3,7 +3,8 @@ if (typeof AFRAME === 'undefined') {
 }
 
 /**
- * Audio Visualizer system for A-Frame.
+ * Audio visualizer system for A-Frame. Share AnalyserNodes between components that share the
+ * the `src`.
  */
 AFRAME.registerSystem('audio-visualizer', {
   init: function () {
@@ -12,14 +13,6 @@ AFRAME.registerSystem('audio-visualizer', {
   },
 
   getOrCreateAnalyser: function (data) {
-    var src = data.src.getAttribute('src');
-    if (this.analysers[src]) {
-      return this.analysers[src];
-    }
-    return this.createAnalyser(data);
-  },
-
-  createAnalyser: function (data) {
     var context = this.context;
     var analysers = this.analysers;
     var analyser = context.createAnalyser();
@@ -28,6 +21,11 @@ AFRAME.registerSystem('audio-visualizer', {
 
     return new Promise(function (resolve) {
       audioEl.addEventListener('canplay', function () {
+        if (analysers[src]) {
+          resolve(analysers[src]);
+          return;
+        }
+
         var source = context.createMediaElementSource(audioEl)
         source.connect(analyser);
         analyser.connect(context.destination);
@@ -43,18 +41,19 @@ AFRAME.registerSystem('audio-visualizer', {
 });
 
 /**
- * Audio Visualizer component for A-Frame.
+ * Audio visualizer component for A-Frame using AnalyserNode.
  */
 AFRAME.registerComponent('audio-visualizer', {
   schema: {
-    smoothingTimeConstant: {default: 0.8},
     fftSize: {default: 2048},
+    smoothingTimeConstant: {default: 0.8},
     src: {type: 'selector'},
     unique: {default: false}
   },
 
   init: function () {
     this.analyser = null;
+    this.spectrum = null;
   },
 
   update: function () {
@@ -64,6 +63,7 @@ AFRAME.registerComponent('audio-visualizer', {
 
     if (!data.src) { return; }
 
+    // Get or create AnalyserNode.
     if (data.unique) {
       system.createAnalyser(data).then(emit);
     } else {
@@ -72,7 +72,88 @@ AFRAME.registerComponent('audio-visualizer', {
 
     function emit (analyser) {
       self.analyser = analyser;
+      self.spectrum = new Uint8Array(self.analyser.frequencyBinCount);
       self.el.emit('audio-analyser-ready', {analyser: analyser});
     }
+  },
+
+  /**
+   * Update spectrum on each frame.
+   */
+  tick: function () {
+    if (!this.analyser) { return; }
+    this.analyser.getByteFrequencyData(this.spectrum);
+  }
+});
+
+/**
+ * Component that triggers an event when frequency surprasses a threshold (e.g., a beat).
+ *
+ * @member {boolean} kicking - Whether component has just emitted a kick.
+ */
+AFRAME.registerComponent('audio-visualizer-kick', {
+  dependencies: ['audio-visualizer'],
+
+  schema: {
+    decay: {default: 0.02},
+    frequency: {default: [0, 10]},
+    threshold: {default: 0.3}
+  },
+
+  init: function () {
+    this.currentThreshold = this.data.threshold;
+    this.kicking = false;
+  },
+
+  tick: function () {
+    var data = this.data;
+    var el = this.el;
+
+    if (!el.components['audio-visualizer'].spectrum) { return; }
+
+    var magnitude = this.maxAmplitude(data.frequency);
+
+    if (magnitude > this.currentThreshold && magnitude > data.threshold) {
+      // Already kicking.
+      if (this.kicking) { return; }
+
+      // Was under the threshold, but now kicking.
+      this.kicking = true;
+      el.emit('audio-visualizer-kick-start', {
+        currentThreshold: this.currentThreshold,
+        magnitude: magnitude
+      });
+    } else {
+      // Update threshold.
+      this.currentThreshold -= data.decay;
+
+      // Was kicking, but now under the threshold
+      if (this.kicking) {
+        this.kicking = false;
+        el.emit('audio-visualizer-kick-end', {
+          currentThreshold: this.currentThreshold,
+          magnitude: magnitude
+        });
+      }
+    }
+  },
+
+  /**
+   * Adapted from dancer.js.
+   */
+  maxAmplitude: function (frequency) {
+    var max = 0;
+    var spectrum = this.el.components['audio-visualizer'].spectrum;
+
+    if (!frequency.length) {
+      return frequency < spectrum.length ? spectrum[~~frequency] : null;
+    }
+
+    for (var i = frequency[0], l = frequency[1]; i <= l; i++) {
+      if (spectrum[i] > max) {
+        max = spectrum[i];
+      }
+    }
+    return max;
   }
 });
