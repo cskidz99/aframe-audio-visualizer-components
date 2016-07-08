@@ -1,23 +1,21 @@
 ## aframe-audio-visualizer-components
 
-Audio visualizer components for [A-Frame](https://aframe.io) using
-[dancer.js](https://github.com/jsantell/dancer.js/).
+Audio visualizer components for [A-Frame](https://aframe.io) using WebAudio API.
 
 ### Properties
 
 #### audio-visualizer
 
-Creates a `dancer.js` instance.
+| Property              | Description                                                          | Default Value |
+| --------              | -----------                                                          | ------------- |
+| fftSize               | Frequency domain.                                                    | 2048          |
+| smoothingTimeConstant | How smooth the frequency data is returned.                           | 0.8           |
+| unique                | Whether to share the audio instance with other visualizing entities. | false         |
 
-| Property | Description                                                          | Default Value |
-| -------- | -----------                                                          | ------------- |
-| src      | Path to audio file `url(song.mp3)` or selector to audio element.     | null          |
-| unique   | Whether to share the audio instance with other visualizing entities. | false         |
-
-Access the `dancer.js` instance to get all the audio data you need:
+To access the analyser node:
 
 ```
-el.components['audio-visualizer'].dancer.getSpectrum();
+el.components['audio-visualizer'].analyser;
 ```
 
 #### audio-visualizer-kick
