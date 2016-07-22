@@ -2,6 +2,8 @@ if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
 
+var context;
+
 /**
  * Audio visualizer system for A-Frame. Share AnalyserNodes between components that share the
  * the `src`.
@@ -9,13 +11,10 @@ if (typeof AFRAME === 'undefined') {
 AFRAME.registerSystem('audio-visualizer', {
   init: function () {
     this.analysers = {};
-    this.context = null;
-
   },
 
   getOrCreateAnalyser: function (data) {
-    if (!this.context) { this.context = new AudioContext(); }
-    var context = this.context;
+    if (!context) { context = new AudioContext(); }
     var analysers = this.analysers;
     var analyser = context.createAnalyser();
     var audioEl = data.src;
