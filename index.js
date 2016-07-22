@@ -9,10 +9,12 @@ if (typeof AFRAME === 'undefined') {
 AFRAME.registerSystem('audio-visualizer', {
   init: function () {
     this.analysers = {};
-    this.context = new AudioContext();
+    this.context = null;
+
   },
 
   getOrCreateAnalyser: function (data) {
+    if (!this.context) { this.context = new AudioContext(); }
     var context = this.context;
     var analysers = this.analysers;
     var analyser = context.createAnalyser();
@@ -65,9 +67,9 @@ AFRAME.registerComponent('audio-visualizer', {
 
     // Get or create AnalyserNode.
     if (data.unique) {
-      system.createAnalyser(data).then(emit);
+      system.createAnalyser(data).then(emit, emit);
     } else {
-      system.getOrCreateAnalyser(data).then(emit);
+      system.getOrCreateAnalyser(data).then(emit, emit);
     }
 
     function emit (analyser) {
