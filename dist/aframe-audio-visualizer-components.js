@@ -66,24 +66,17 @@
 	    var audioEl = data.src;
 	    var src = audioEl.getAttribute('src');
 
-	    return new Promise(function (resolve) {
-	      audioEl.addEventListener('canplay', function () {
-	        if (analysers[src]) {
-	          resolve(analysers[src]);
-	          return;
-	        }
+	    if (analysers[src]) { return analysers[src]; }
 
-	        var source = context.createMediaElementSource(audioEl)
-	        source.connect(analyser);
-	        analyser.connect(context.destination);
-	        analyser.smoothingTimeConstant = data.smoothingTimeConstant;
-	        analyser.fftSize = data.fftSize;
+	    var source = context.createMediaElementSource(audioEl)
+	    source.connect(analyser);
+	    analyser.connect(context.destination);
+	    analyser.smoothingTimeConstant = data.smoothingTimeConstant;
+	    analyser.fftSize = data.fftSize;
 
-	        // Store.
-	        analysers[src] = analyser;
-	        resolve(analysers[src]);
-	      });
-	    });
+	    // Store.
+	    analysers[src] = analyser;
+	    return analysers[src];
 	  }
 	});
 
@@ -112,9 +105,9 @@
 
 	    // Get or create AnalyserNode.
 	    if (data.unique) {
-	      system.createAnalyser(data).then(emit, emit);
+	      emit(system.createAnalyser(data));
 	    } else {
-	      system.getOrCreateAnalyser(data).then(emit, emit);
+	      emit(system.getOrCreateAnalyser(data));
 	    }
 
 	    function emit (analyser) {
