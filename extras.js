@@ -1,3 +1,7 @@
+/**
+ * Scale all children based on frequency of spectrum.
+ * Spectrum range can be controlled by the audio visualizer component.
+ */
 AFRAME.registerComponent('audio-visualizer-spectrum-scale', {
   dependencies: ['audio-visualizer'],
 
