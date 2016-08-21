@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/ngokevin/aframe-audio-visualizer-components#readme",
   "devDependencies": {
-    "aframe": "aframevr/aframe#793985",
+    "aframe": "^0.3.0",
     "aframe-entity-generator-component": "^0.1.0",
     "aframe-layout-component": "^1.2.0",
     "browserify": "^12.0.1",

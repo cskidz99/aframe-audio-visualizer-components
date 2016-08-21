@@ -49,7 +49,7 @@ Install and use by directly including the [browser files](dist):
 ```html
 <head>
   <title>Audio Visualizer</title>
-  <script src="https://aframe.io/releases/0.2.0/aframe.min.js"></script>
+  <script src="https://aframe.io/releases/0.3.0/aframe.min.js"></script>
   <script src="https://rawgit.com/ngokevin/aframe-audio-visualizer-components/master/dist/aframe-audio-visualizer-components.min.js"></script>
 </head>
 
